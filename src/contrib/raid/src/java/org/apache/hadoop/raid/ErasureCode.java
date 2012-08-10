@@ -47,12 +47,34 @@ public abstract class ErasureCode {
    *          present in the least significant bits of each int. The number of
    *          elements in data is stripeSize() + paritySize().
    * @param erasedLocations
-   *          The indexes in data which are not available.
+   *          The indexes in data which are to be fixed.
+   *          All indexes not included in erasedLocations are considered
+   *          available to the decode operation.
    * @param erasedValues
    *          (out)The decoded values corresponding to erasedLocations.
    */
   public abstract void decode(int[] data, int[] erasedLocations,
       int[] erasedValues);
+
+  /**
+   * Generates missing portions of data.
+   * 
+   * @param data
+   *          The message and parity. The parity should be placed in the first
+   *          part of the array. In each integer, the relevant portion is
+   *          present in the least significant bits of each int. The number of
+   *          elements in data is stripeSize() + paritySize().
+   * @param erasedLocations
+   *          The indexes in data which are to be fixed.
+   * @param erasedValues
+   *          (out)The decoded values corresponding to erasedLocations.
+   * @param locationsToRead
+   *          The indexes in data which can be used to fix the erasedLocations.
+   * @param locationsNotToRead
+   *          The indexes in data which cannot be used in the decode process.
+   */
+  public abstract void decode(int[] data, int[] erasedLocations,
+      int[] erasedValues, int[] locationsToRead, int[] locationsNotToRead);
 
   /**
    * Figure out which locations need to be read to decode erased locations. The
@@ -139,7 +161,7 @@ public abstract class ErasureCode {
    * so that the subclass will have its own decodeBulk behavior. 
    */
   public void decodeBulk(byte[][] readBufs, byte[][] writeBufs,
-      int[] erasedLocations) {
+      int[] erasedLocations, int[] locationsToRead, int[] locationsNotToRead) {
     int[] tmpInput = new int[readBufs.length];
     int[] tmpOutput = new int[erasedLocations.length];
 
@@ -151,7 +173,8 @@ public abstract class ErasureCode {
       for (int i = 0; i < tmpInput.length; i++) {
         tmpInput[i] = readBufs[i][idx] & 0x000000FF;
       }
-      decode(tmpInput, erasedLocations, tmpOutput);
+      decode(tmpInput, erasedLocations, tmpOutput, locationsToRead,
+          locationsNotToRead);
       for (int i = 0; i < tmpOutput.length; i++) {
         writeBufs[i][idx] = (byte) tmpOutput[i];
       }

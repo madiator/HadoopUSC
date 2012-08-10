@@ -124,22 +124,46 @@ public class ReedSolomonCode extends ErasureCode {
   }
 
   @Override
-  public void decode(int[] data, int[] erasedLocation, int[] erasedValue) {
-    if (erasedLocation.length == 0) {
+  public void decode(int[] data, int[] erasedLocations, int[] erasedValues) {
+    if (erasedLocations.length == 0) {
       return;
     }
-    assert(erasedLocation.length == erasedValue.length);
-    for (int i = 0; i < erasedLocation.length; i++) {
-      data[erasedLocation[i]] = 0;
+    assert(erasedLocations.length == erasedValues.length);
+    for (int i = 0; i < erasedLocations.length; i++) {
+      data[erasedLocations[i]] = 0;
     }
-    for (int i = 0; i < erasedLocation.length; i++) {
-      errSignature[i] = primitivePower[erasedLocation[i]];
-      erasedValue[i] = GF.substitute(data, primitivePower[i]);
+    for (int i = 0; i < erasedLocations.length; i++) {
+      errSignature[i] = primitivePower[erasedLocations[i]];
+      erasedValues[i] = GF.substitute(data, primitivePower[i]);
     }
-    GF.solveVandermondeSystem(errSignature, erasedValue, erasedLocation.length);
+    GF.solveVandermondeSystem(errSignature, erasedValues,
+                              erasedLocations.length);
   }
   
   @Override
+  public void decode(int[] data, int[] erasedLocations, int[] erasedValues,
+      int[] locationsToRead, int[] locationsNotToRead) {
+    /*
+     * Pretend that all locations in locationsNotToRead are
+     * erased and try to repair them.
+     */
+    int[] recovValue = new int[locationsNotToRead.length];
+    decode(data, locationsNotToRead, recovValue);
+
+    /*
+     * Among the recovered values corresponding to locationsNotToRead
+     * copy those corresponding to erasedLocation into erasedValue.
+     */
+    for (int i=0; i < erasedLocations.length; i++) {
+      for (int j=0; j < locationsNotToRead.length; j++) {
+        if (erasedLocations[i] == locationsNotToRead[j]) {
+          erasedValues[i] = recovValue[j];
+          break;
+        }
+      }
+    }
+  }
+
   public void decodeBulk(byte[][] readBufs, byte[][] writeBufs, 
                                int[] erasedLocation) {
     if (erasedLocation.length == 0) {
@@ -157,6 +181,32 @@ public class ReedSolomonCode extends ErasureCode {
     }
     GF.solveVandermondeSystem(errSignature, writeBufs, erasedLocation.length, 
         readBufs[0].length);
+  }
+
+  /**
+   * This method would be overridden in the subclass, 
+   * so that the subclass will have its own decodeBulk behavior. 
+   */
+  @Override
+  public void decodeBulk(byte[][] readBufs, byte[][] writeBufs,
+      int[] erasedLocations, int[] locationsToRead, int[] locationsNotToRead) {
+    int[] tmpInput = new int[readBufs.length];
+    int[] tmpOutput = new int[erasedLocations.length];
+
+    int numBytes = readBufs[0].length;
+    for (int idx = 0; idx < numBytes; idx++) {
+      for (int i = 0; i < tmpOutput.length; i++) {
+        tmpOutput[i] = 0;
+      }
+      for (int i = 0; i < tmpInput.length; i++) {
+        tmpInput[i] = readBufs[i][idx] & 0x000000FF;
+      }
+      decode(tmpInput, erasedLocations, tmpOutput, locationsToRead,
+          locationsNotToRead);
+      for (int i = 0; i < tmpOutput.length; i++) {
+        writeBufs[i][idx] = (byte) tmpOutput[i];
+      }
+    }
   }
 
   @Override

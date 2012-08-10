@@ -54,7 +54,7 @@ public class Codec implements Serializable {
   /**
    * Used by ErasureCode.init() to get Code specific extra parameters.
    */
-  public final String jsonStr;
+  public final JSONObject json;
 
   /**
    * id of the codec. Used by policy in raid.xml
@@ -182,8 +182,8 @@ public class Codec implements Serializable {
     }
   }
 
-  private Codec(JSONObject json) throws JSONException {
-    this.jsonStr = json.toString();
+  public Codec(JSONObject json) throws JSONException {
+    this.json = json;
     this.id = json.getString("id");
     this.parityLength = json.getInt("parity_length");
     this.stripeLength = json.getInt("stripe_length");
@@ -241,10 +241,10 @@ public class Codec implements Serializable {
 
   @Override
   public String toString() {
-    if (jsonStr == null) {
+    if (json == null) {
       return "Test codec " + id;
     } else {
-      return jsonStr;
+      return json.toString();
     }
   }
   
@@ -293,7 +293,7 @@ public class Codec implements Serializable {
                 String tmpHarDirectory,
                 boolean isDirRaid,
                 boolean simulateBlockFix) {
-    this.jsonStr = null;
+    this.json = null;
     this.id = id;
     this.parityLength = parityLength;
     this.stripeLength = stripeLength;

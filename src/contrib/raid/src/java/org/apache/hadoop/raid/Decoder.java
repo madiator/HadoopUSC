@@ -79,9 +79,11 @@ public class Decoder {
     this.code = codec.createErasureCode(conf);
     this.rand = new Random();
     this.bufSize = conf.getInt("raid.decoder.bufsize", 1024 * 1024);
-    this.writeBufs = new byte[codec.parityLength][];
+    // this.writeBufs = new byte[codec.parityLength][];
     this.readBufs = new byte[codec.parityLength + codec.stripeLength][];
-    allocateBuffers();
+    //allocateBuffers();
+    //writeBufs will be allocated when the writeBufs.length is known and
+    //writeBufs array can be initialized.
   }
   
   public int getNumMissingBlocksInStripe() {
@@ -93,7 +95,7 @@ public class Decoder {
   }
   
   private void allocateBuffers() {
-    for (int i = 0; i < codec.parityLength; i++) {
+    for (int i = 0; i < writeBufs.length; i++) {
       writeBufs[i] = new byte[bufSize];
     }
   }
@@ -304,7 +306,8 @@ public class Decoder {
     List<Integer> erasedLocations = new ArrayList<Integer>();
     // Start off with one erased location.
     erasedLocations.add(erasedLocationToFix);
-    Set<Integer> locationsToNotRead = new HashSet<Integer>();
+    List<Integer> locationsToRead = new ArrayList<Integer>(
+        codec.parityLength + codec.stripeLength);
 
     int boundedBufferCapacity = 2;
     ParallelStreamReader parallelReader = null;
@@ -315,9 +318,13 @@ public class Decoder {
     if (partial) {
       startOffsetInBlock = errorOffset % blockSize;
     }
-    
+
+    // will be resized later
+    int[] erasedLocationsArray = new int[0];
+    int[] locationsToReadArray = new int[0];
+    int[] locationsNotToReadArray = new int[0];
+
     try {
-      int[] locationsToFix = new int[codec.parityLength];
       numReadBytes = 0;
       long written;
       // Loop while the number of written bytes is less than the max.
@@ -330,13 +337,59 @@ public class Decoder {
             inputs = sReader.buildInputs(srcFs, srcFile,
                 srcStat, parityFs, parityFile, parityStat,
                 lp.getStripeIdx(), offsetInBlock, erasedLocations,
-                locationsToNotRead, code);
-            int i = 0;
-            for (int location : locationsToNotRead) {
-              locationsToFix[i] = location;
-              i++;
-            }
+                locationsToRead, code);
             
+            /*
+             * locationsToRead have now been populated and erasedLocations
+             * might have been updated with more erased locations.
+             */
+            LOG.info("Erased locations: " + erasedLocations.toString() +
+                     "\nLocations to Read for repair:" + 
+                     locationsToRead.toString());
+
+            /*
+             * Initialize erasedLocationsArray with erasedLocations.
+             */
+            int i = 0;
+            erasedLocationsArray = new int[erasedLocations.size()];
+            for (int loc = 0; loc < codec.stripeLength + codec.parityLength;
+                 loc++){
+              if (erasedLocations.indexOf(loc) >= 0){
+                erasedLocationsArray[i] = loc;
+                i++;
+              }
+            }
+
+            /*
+             * Initialize locationsToReadArray with locationsToRead.
+             */
+            i = 0;
+            locationsToReadArray = new int[locationsToRead.size()];
+            for (int loc = 0; loc < codec.stripeLength + codec.parityLength;
+                 loc++){
+              if (locationsToRead.indexOf(loc) >= 0){
+                locationsToReadArray[i] = loc;
+                i++;
+              }
+            }
+
+            i = 0;
+            locationsNotToReadArray = new int[codec.stripeLength +
+                                              codec.parityLength - 
+                                              locationsToRead.size()];
+
+            for (int loc = 0; loc < codec.stripeLength + codec.parityLength;
+                 loc++){
+              if (locationsToRead.indexOf(loc) == -1 ||
+                  erasedLocations.indexOf(loc) != -1){
+                locationsNotToReadArray[i] = loc;
+                i++;
+              }
+            }
+
+            this.writeBufs = new byte[erasedLocations.size()][];
+            allocateBuffers();
+
             assert(parallelReader == null);
             parallelReader = new ParallelStreamReader(reporter, inputs, 
               (int)Math.min(bufSize, limit),
@@ -346,7 +399,8 @@ public class Decoder {
           ParallelStreamReader.ReadResult readResult = readFromInputs(
             erasedLocations, limit, reporter, parallelReader);
           
-          code.decodeBulk(readResult.readBufs, writeBufs, locationsToFix);
+          code.decodeBulk(readResult.readBufs, writeBufs, erasedLocationsArray,
+              locationsToReadArray, locationsNotToReadArray);
           
           // get the number of bytes read through hdfs.
           for (int readNum : readResult.numRead) {
@@ -354,8 +408,8 @@ public class Decoder {
           }
 
           int toWrite = (int)Math.min((long)bufSize, limit - written);
-          for (int i = 0; i < locationsToFix.length; i++) {
-            if (locationsToFix[i] == erasedLocationToFix) {
+          for (int i = 0; i < erasedLocationsArray.length; i++) {
+            if (erasedLocationsArray[i] == erasedLocationToFix) {
               if (out != null)
                 out.write(writeBufs[i], 0, toWrite);
               if (crc != null) {
@@ -486,10 +540,12 @@ public class Decoder {
     private long currentOffset;
     private long dfsNumRead = 0;
 
-    private final Set<Integer> locationsToNotRead = new HashSet<Integer>();
+    private final List<Integer> locationsToRead = new ArrayList<Integer>();
     private final List<Integer> erasedLocations = new ArrayList<Integer>();
-    private final int[] locationsToFix = new int[codec.parityLength];
-    
+    int[] erasedLocationsArray;
+    int[] locationsToReadArray;
+    int[] locationsNotToReadArray;
+
     public DecoderInputStream(
         final Progressable reporter,
         final long limit,
@@ -555,12 +611,61 @@ public class Decoder {
         inputs = sReader.buildInputs(srcFs, srcFile, srcStat,
             parityFs, parityFile, parityStat,
             locationPair.getStripeIdx(), offsetInBlock,
-            erasedLocations, locationsToNotRead, code);
+            erasedLocations, locationsToRead, code);
+
+        /*
+         * locationsToRead have now been populated and erasedLocations
+         * might have been updated with more erased locations.
+         */
+        LOG.info("Erased locations: " + erasedLocations.toString() +
+                 "\nLocations to Read for repair:" +
+                 locationsToRead.toString());
+
+        /*
+         * Initialize erasedLocationsArray with the erasedLocations.
+         */
         int i = 0;
-        for (int location : locationsToNotRead) {
-          locationsToFix[i] = location;
-          i++;
+        erasedLocationsArray = new int[erasedLocations.size()];
+        for (int loc = 0; loc < codec.stripeLength + codec.parityLength;
+             loc++){
+          if (erasedLocations.indexOf(loc) >= 0){
+            erasedLocationsArray[i] = loc;
+            i++;
+          }
         }
+        /*
+         * Initialize locationsToReadArray with the locationsToRead.
+         */
+        i = 0;
+        locationsToReadArray = new int[locationsToRead.size()];
+        for (int loc = 0; loc < codec.stripeLength + codec.parityLength;
+             loc++){
+          if (locationsToRead.indexOf(loc) >= 0){
+            locationsToReadArray[i] = loc;
+            i++;
+          }
+        }
+
+        /*
+         * Initialize locationsNotToReadArray with the locations that are
+         * either erased or not supposed to be read.
+         */
+        i = 0;
+        locationsNotToReadArray = new int[codec.stripeLength +
+                                          codec.parityLength -
+                                          locationsToRead.size()];
+
+        for (int loc = 0; loc < codec.stripeLength + codec.parityLength;
+             loc++){
+          if (locationsToRead.indexOf(loc) == -1 || 
+              erasedLocations.indexOf(loc) != -1) {
+            locationsNotToReadArray[i] = loc;
+            i++;
+          }
+        }
+
+        writeBufs = new byte[erasedLocations.size()][];
+        allocateBuffers();
 
         assert(parallelReader == null);
         parallelReader = new ParallelStreamReader(reporter, inputs, 
@@ -581,10 +686,11 @@ public class Decoder {
         for (int readNum : readResult.numRead) {
           dfsNumRead += readNum;
         }
-        code.decodeBulk(readResult.readBufs, writeBufs, locationsToFix);
+        code.decodeBulk(readResult.readBufs, writeBufs, erasedLocationsArray,
+            locationsToReadArray, locationsNotToReadArray);
 
-        for (int i=0; i<locationsToFix.length; i++) {
-          if (locationsToFix[i] == erasedLocationToFix) {
+        for (int i=0; i<erasedLocationsArray.length; i++) {
+          if (erasedLocationsArray[i] == erasedLocationToFix) {
             buffer = writeBufs[i];
             bufferLen = Math.min(bufSize, limit - streamOffset);
             position = 0;

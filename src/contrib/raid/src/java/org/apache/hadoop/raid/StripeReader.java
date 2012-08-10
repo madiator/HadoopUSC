@@ -95,15 +95,21 @@ public abstract class StripeReader {
     FileSystem srcFs, Path srcFile, FileStatus srcStat,
     FileSystem parityFs, Path parityFile, FileStatus parityStat,
     int stripeIdx, long offsetInBlock, List<Integer> erasedLocations,
-    Set<Integer> locationsToNotRead, ErasureCode code)
+    List<Integer> locationsToRead, ErasureCode code)
       throws IOException {
     InputStream[] inputs = new InputStream[codec.stripeLength +
                                            codec.parityLength]; 
     boolean redo = false;
     do {
-      locationsToNotRead.clear();
-      List<Integer> locationsToRead =
-        code.locationsToReadForDecode(erasedLocations);
+      /*
+       * In the first iteration locationsToRead is empty.
+       * It is populated according to locationsToReadForDecode.
+       * In consecutive iterations (if a stream failed to open)
+       * the list is cleared and re-populated.
+       */
+      locationsToRead.clear();
+      locationsToRead.addAll(code.locationsToReadForDecode(erasedLocations));
+
       for (int i = 0; i < inputs.length; i++) {
         boolean isErased = (erasedLocations.indexOf(i) != -1);
         boolean shouldRead = (locationsToRead.indexOf(i) != -1);
@@ -115,7 +121,7 @@ public abstract class StripeReader {
             } else {
               LOG.info("Location " + i + " need not be read, using zeros");
             }
-            locationsToNotRead.add(i);
+
             stm = new RaidUtils.ZeroInputStream(srcStat.getBlockSize() * (
               (i < codec.parityLength) ?
               stripeIdx * codec.parityLength + i :
@@ -138,7 +144,6 @@ public abstract class StripeReader {
         }
       }
     } while (redo);
-    assert(locationsToNotRead.size() == codec.parityLength);
     return inputs;
   }
   

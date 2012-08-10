@@ -80,6 +80,12 @@ public class XORCode extends ErasureCode {
   }
 
   @Override
+  public void decode(int[] data, int[] erasedLocations,
+      int[] erasedValues, int[] locationsToRead, int[] locationsNotToRead){
+    decode(data, erasedLocations, erasedValues);
+  }
+
+  @Override
   public int stripeSize() {
     return this.stripeSize;
   }
@@ -110,7 +116,6 @@ public class XORCode extends ErasureCode {
     }
   }
 
-  @Override
   public void decodeBulk(
     byte[][] readBufs, byte[][] writeBufs, int[] erasedLocations) {
     assert(erasedLocations.length == writeBufs.length);
@@ -132,5 +137,11 @@ public class XORCode extends ErasureCode {
         output[j] ^= input[j];
       }
     }
+  }
+
+  @Override
+  public void decodeBulk(byte[][] readBufs, byte[][] writeBufs,
+    int[] erasedLocations, int[] locationsToRead, int[] locationsNotToRead) {
+	decodeBulk(readBufs, writeBufs, erasedLocations);
   }
 }
