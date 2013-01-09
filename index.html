@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Xorbas VLDB Paper by madiator</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Xorbas VLDB Paper</h1>
+        <p class="header">USC Version of Hadoop that includes HDFS-RAID. Erasure codes like Simple Regenerating Code, Reed Solomon Code and XOR code are supported.  </p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/madiator/HadoopUSC/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/madiator/HadoopUSC/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/madiator/HadoopUSC">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/madiator">madiator</a></p>
+
+
+      </header>
+      <section>
+        <h1>XORing Elephants: Novel Erasure Codes for Big Data</h1>
+
+<h2>Authors:</h2>
+
+<ul>
+<li>Maheswaran Sathiamoorthy, University of Southern California</li>
+<li>Megasthenis Asteris, University of Texas at Austin</li>
+<li>Dimitris Papailiopoulos, University of Texas at Austin</li>
+<li>Alexandros G. Dimakis, University of Texas at Austin</li>
+<li>Ramkumar Vadali, Facebook</li>
+<li>Scott Chen, Facebook</li>
+<li>Dhruba Borthakur, Facebook</li>
+</ul><h2>Abstract:</h2>
+
+<p>`Distributed storage systems for large clusters typically use replication to provide reliability. Recently, erasure codes have been used to reduce the large storage overhead of three- replicated systems. Reed-Solomon codes are the standard design choice and their high repair cost is often considered an unavoidable price to pay for high storage efficiency and high reliability.</p>
+
+<p>`This paper shows how to overcome this limitation. We present a novel family of erasure codes that are efficiently repairable and offer higher reliability compared to Reed- Solomon codes. We show analytically that our codes are optimal on a recently identified tradeoff between locality and minimum distance.</p>
+
+<p>`We implement our new codes in Hadoop HDFS and com- pare to a currently deployed HDFS module that uses Reed- Solomon codes. Our modified HDFS implementation shows a reduction of approximately 2× on the repair disk I/O and repair network traffic. The disadvantage of the new coding scheme is that it requires 14% more storage compared to Reed-Solomon codes, an overhead shown to be information theoretically optimal to obtain locality. Because the new codes repair failures faster, this provides higher reliability, which is orders of magnitude higher compared to replication.</p>
+
+<h3>The paper is set to appear in VLDB 2013, Italy.</h3>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
