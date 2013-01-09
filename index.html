@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Xorbas VLDB Paper by madiator</title>
+    <title>Xorbas by madiator</title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
@@ -16,8 +16,8 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1 class="header">Xorbas VLDB Paper</h1>
-        <p class="header">USC Version of Hadoop that includes HDFS-RAID. Erasure codes like Simple Regenerating Code, Reed Solomon Code and XOR code are supported.  </p>
+        <h1 class="header">Xorbas</h1>
+        <p class="header">The code for Xorbas can be found below.</p>
 
         <ul>
           <li class="download"><a class="buttons" href="https://github.com/madiator/HadoopUSC/zipball/master">Download ZIP</a></li>
@@ -30,9 +30,13 @@
 
       </header>
       <section>
-        <h1>XORing Elephants: Novel Erasure Codes for Big Data</h1>
+        <h1>Xorbas</h1>
 
-<p><img src="http://photos.smahesh.com/photos/i-kq522gx/0/O/i-kq522gx.png" alt="Xorbas"></p>
+<p>Xorbas is our Hadoop version that implements a new set of regenerating codes called <code>Locally Repairable Codes (LRC)</code>. It is built on top of <a href="http://github.com/facebook/hadoop-20">Facebook's Hadoop system running HDFS-RAID</a>, and thus can support Reed Solomon and XOR codes in addition to LRCs. </p>
+
+<h2>Paper: XORing Elephants: Novel Erasure Codes for Big Data</h2>
+
+<p><img src="http://photos.smahesh.com/photos/i-kq522gx/0/M/i-kq522gx-M.png" alt="Xorbas"></p>
 
 <h2>Authors:</h2>
 
@@ -46,16 +50,16 @@
 <li>Dhruba Borthakur, Facebook</li>
 </ul><h2>Abstract:</h2>
 
-<p>`Distributed storage systems for large clusters typically use replication to provide reliability. Recently, erasure codes have been used to reduce the large storage overhead of three- replicated systems. Reed-Solomon codes are the standard design choice and their high repair cost is often considered an unavoidable price to pay for high storage efficiency and high reliability.</p>
+<p>Distributed storage systems for large clusters typically use replication to provide reliability. Recently, erasure codes have been used to reduce the large storage overhead of three-replicated systems. Reed-Solomon codes are the standard design choice and their high repair cost is often considered an unavoidable price to pay for high storage efficiency and high reliability.</p>
 
-<p>`This paper shows how to overcome this limitation. We present a novel family of erasure codes that are efficiently repairable and offer higher reliability compared to Reed- Solomon codes. We show analytically that our codes are optimal on a recently identified tradeoff between locality and minimum distance.</p>
+<p>This paper shows how to overcome this limitation. We present a novel family of erasure codes that are efficiently repairable and offer higher reliability compared to Reed-Solomon codes. We show analytically that our codes are optimal on a recently identified tradeoff between locality and minimum distance.</p>
 
-<p>`We implement our new codes in Hadoop HDFS and com- pare to a currently deployed HDFS module that uses Reed- Solomon codes. Our modified HDFS implementation shows a reduction of approximately 2× on the repair disk I/O and repair network traffic. The disadvantage of the new coding scheme is that it requires 14% more storage compared to Reed-Solomon codes, an overhead shown to be information theoretically optimal to obtain locality. Because the new codes repair failures faster, this provides higher reliability, which is orders of magnitude higher compared to replication.</p>
+<p>We implement our new codes in Hadoop HDFS and compare to a currently deployed HDFS module that uses Reed-Solomon codes. Our modified HDFS implementation shows a reduction of approximately 2x on the repair disk I/O and repair network traffic. The disadvantage of the new coding scheme is that it requires 14% more storage compared to Reed-Solomon codes, an overhead shown to be information theoretically optimal to obtain locality. Because the new codes repair failures faster, this provides higher reliability, which is orders of magnitude higher compared to replication.</p>
 
-<h3>The paper is set to appear in VLDB 2013, Italy.</h3>
+<h4>The paper is set to appear in 39th International Conference on Very Large Data Bases (VLDB) 2013, Italy.</h4>
 
 <h3>
-<a href="http://anrg.usc.edu/%7Emaheswaran/Xorbas.pdf">Download the paper</a>.</h3>
+<a href="http://anrg.usc.edu/%7Emaheswaran/Xorbas.pdf">Download the Paper</a>.</h3>
       </section>
       <footer>
         <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
